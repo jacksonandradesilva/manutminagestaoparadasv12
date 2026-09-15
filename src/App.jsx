@@ -645,14 +645,14 @@ function AuthPage() {
     setError('');
     setMessage('');
 
-    const safeEmail = email.trim();
+    const safeEmail = email.trim().toLowerCase();
 
     if (!safeEmail || !password) {
       setError('Preencha e-mail e senha.');
       return;
     }
 
-    if (password.length < 8) {
+    if (isSignUp && password.length < 8) {
       setError('Use uma senha com no minimo 8 caracteres.');
       return;
     }
