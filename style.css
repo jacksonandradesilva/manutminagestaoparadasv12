@@ -227,6 +227,28 @@ h2 {
 	max-width: 220px;
 }
 
+.date-filter-bar .form-field {
+	min-width: 220px;
+}
+
+.date-filter-bar label {
+	display: block;
+	font-weight: 600;
+	color: var(--text-primary);
+	font-size: 13px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.form-error {
+	margin: -8px 0 20px;
+	padding: 10px 12px;
+	border: 1px solid var(--danger-light);
+	background: var(--danger-bg);
+	color: var(--danger-dark);
+	font-size: 14px;
+}
+
 .summary-cards {
 	margin-top: 20px;
 }

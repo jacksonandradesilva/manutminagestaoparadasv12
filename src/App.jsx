@@ -37,6 +37,7 @@ const PAGE_ACCESS_OPTIONS = [
   { key: 'historico', label: 'Gestao de parada', path: '/historico' },
   { key: 'relatorio-turnos', label: 'Relatorio por turno', path: '/relatorio-turnos' },
   { key: 'historico-opcoes', label: 'Historico por opcao', path: '/historico-opcoes' },
+  { key: 'historico-datas', label: 'Filtro por data', path: '/filtro-datas' },
   { key: 'dashboard-turnos', label: 'Dashboard por turno', path: '/dashboard-turnos' },
   { key: 'agente-ia', label: 'Agente IA', path: '/agente-ia' }
 ];
@@ -66,6 +67,18 @@ function normalizeText(text) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
+}
+
+function getRecordDateKey(value) {
+  const text = String(value || '').trim();
+  const brazilianDate = text.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+
+  if (brazilianDate) {
+    return `${brazilianDate[3]}-${brazilianDate[2]}-${brazilianDate[1]}`;
+  }
+
+  const isoDate = text.match(/^(\d{4}-\d{2}-\d{2})/);
+  return isoDate ? isoDate[1] : '';
 }
 
 function toParadaBase(historicoParadas) {
@@ -672,7 +685,13 @@ function AuthPage() {
         await signInWithPassword(safeEmail, password);
       }
     } catch (authError) {
-      setError(authError?.message || 'Nao foi possivel autenticar.');
+      const message = String(authError?.message || '').toLowerCase();
+
+      if (message.includes('failed to fetch') || message.includes('networkerror')) {
+        setError('Nao foi possivel conectar ao Supabase. Verifique a VITE_SUPABASE_URL e a disponibilidade do projeto.');
+      } else {
+        setError(authError?.message || 'Nao foi possivel autenticar.');
+      }
     } finally {
       setLoading(false);
     }
@@ -836,6 +855,7 @@ function DashboardPage({ pagePermissions }) {
     turno: '',
     turma: '',
     causa: '',
+    supervisor: '',
     horaInicio: '',
     horaFim: ''
   });
@@ -881,6 +901,7 @@ function DashboardPage({ pagePermissions }) {
         turno: equipamento.turno,
         turma: equipamento.turma,
         causa: equipamento.causa,
+        supervisor: equipamento.supervisor,
         horaInicio: equipamento.horaInicio,
         horaFim: equipamento.horaFim,
         dataHoraCadastro: equipamento.dataHoraCadastro,
@@ -898,6 +919,7 @@ function DashboardPage({ pagePermissions }) {
       turno: '',
       turma: '',
       causa: '',
+      supervisor: '',
       horaInicio: '',
       horaFim: ''
     });
@@ -922,6 +944,7 @@ function DashboardPage({ pagePermissions }) {
       turno: formData.turno,
       turma: formData.turma,
       causa: formData.causa.trim(),
+      supervisor: formData.supervisor.trim(),
       horaInicio: formData.horaInicio,
       horaFim: formData.horaFim,
       dataHoraCadastro: equipamentoAtual?.dataHoraCadastro || dataHoraCadastro
@@ -957,6 +980,7 @@ function DashboardPage({ pagePermissions }) {
       turno: equip.turno || '',
       turma: equip.turma || '',
       causa: equip.causa || '',
+      supervisor: equip.supervisor || '',
       horaInicio: equip.horaInicio || '',
       horaFim: equip.horaFim || ''
     });
@@ -984,6 +1008,7 @@ function DashboardPage({ pagePermissions }) {
         {pagePermissions.historico && <LinkButton to="/historico">Ver Gestao de Parada da Manutencao</LinkButton>}
         {pagePermissions['relatorio-turnos'] && <LinkButton to="/relatorio-turnos">Relatorio por Turno</LinkButton>}
         {pagePermissions['historico-opcoes'] && <LinkButton to="/historico-opcoes">Historico por Opcao</LinkButton>}
+        {pagePermissions['historico-datas'] && <LinkButton to="/filtro-datas">Filtrar Historico por Data</LinkButton>}
         {pagePermissions['dashboard-turnos'] && <LinkButton to="/dashboard-turnos">Dashboard por Turno</LinkButton>}
         {pagePermissions['agente-ia'] && <LinkButton to="/agente-ia">Agente IA</LinkButton>}
         {equipamentos.some((e) => e.status === 'parado') && (
@@ -1061,6 +1086,16 @@ function DashboardPage({ pagePermissions }) {
         </div>
 
         <div className="form-field">
+          <label htmlFor="supervisorEquip">Supervisao:</label>
+          <input
+            id="supervisorEquip"
+            value={formData.supervisor}
+            onChange={(event) => setFormData({ ...formData, supervisor: event.target.value })}
+            placeholder="Nome da supervisao"
+          />
+        </div>
+
+        <div className="form-field">
           <label htmlFor="horaInicio">Horario Inicio:</label>
           <input
             id="horaInicio"
@@ -1095,6 +1130,7 @@ function DashboardPage({ pagePermissions }) {
             <th>Turno</th>
             <th>Turma</th>
             <th>Causa da Parada</th>
+            <th>Supervisao</th>
             <th>Horario Inicio</th>
             <th>Horario Fim</th>
             <th>Data e Hora Cadastro</th>
@@ -1109,6 +1145,7 @@ function DashboardPage({ pagePermissions }) {
               <td data-label="Turno">{equip.turno || '-'}</td>
               <td data-label="Turma">{equip.turma || '-'}</td>
               <td data-label="Causa da Parada">{equip.causa || '-'}</td>
+              <td data-label="Supervisao">{equip.supervisor || '-'}</td>
               <td data-label="Horario Inicio">{equip.horaInicio || '-'}</td>
               <td data-label="Horario Fim">{equip.horaFim || '-'}</td>
               <td data-label="Data e Hora Cadastro">{equip.dataHoraCadastro || '-'}</td>
@@ -1138,6 +1175,7 @@ function HistoricoPage() {
     turno: 'A',
     turma: 'A',
     causa: '',
+    supervisor: '',
     horaInicio: '',
     horaFim: '',
     acao: 'corretiva'
@@ -1181,6 +1219,7 @@ function HistoricoPage() {
       turno: 'A',
       turma: 'A',
       causa: '',
+      supervisor: '',
       horaInicio: '',
       horaFim: '',
       acao: 'corretiva'
@@ -1195,6 +1234,7 @@ function HistoricoPage() {
       turno: item.turno || 'A',
       turma: item.turma || 'A',
       causa: item.causa || '',
+      supervisor: item.supervisor || '',
       horaInicio: item.horaInicio || '',
       horaFim: item.horaFim || '',
       acao: ['corretiva', 'preventiva', 'preditiva', 'programada'].includes(item.acao) ? item.acao : 'corretiva'
@@ -1234,7 +1274,8 @@ function HistoricoPage() {
         ...item,
         ...editData,
         nome: editData.nome.trim(),
-        causa: editData.causa.trim()
+        causa: editData.causa.trim(),
+        supervisor: editData.supervisor.trim()
       };
     });
 
@@ -1296,6 +1337,13 @@ function HistoricoPage() {
             />
           </div>
           <div className="form-field">
+            <label>Supervisao</label>
+            <input
+              value={editData.supervisor}
+              onChange={(event) => setEditData({ ...editData, supervisor: event.target.value })}
+            />
+          </div>
+          <div className="form-field">
             <label>Inicio</label>
             <input
               type="time"
@@ -1352,6 +1400,7 @@ function HistoricoPage() {
             <th>Turno</th>
             <th>Turma</th>
             <th>Equipe de Manutencao</th>
+            <th>Supervisao</th>
             <th>Inicio</th>
             <th>Fim</th>
             <th>Tipo de Manutencao</th>
@@ -1369,6 +1418,7 @@ function HistoricoPage() {
               <td data-label="Turno">{item.turno || '-'}</td>
               <td data-label="Turma">{item.turma || '-'}</td>
               <td data-label="Equipe de Manutencao">{item.causa || '-'}</td>
+              <td data-label="Supervisao">{item.supervisor || '-'}</td>
               <td data-label="Inicio">{item.horaInicio || '-'}</td>
               <td data-label="Fim">{item.horaFim || '-'}</td>
               <td data-label="Tipo de Manutencao">{item.acao || '-'}</td>
@@ -1394,6 +1444,7 @@ function HistoricoPage() {
 function HistoricoOpcoesPage() {
   const [historicoCompleto, setHistoricoCompleto] = useState([]);
   const [filtroNome, setFiltroNome] = useState('');
+  const [filtroSupervisor, setFiltroSupervisor] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('');
   const [filtroTurno, setFiltroTurno] = useState('');
   const [filtroTurma, setFiltroTurma] = useState('');
@@ -1422,11 +1473,12 @@ function HistoricoOpcoesPage() {
   const filtradosBase = useMemo(() => {
     return historicoCompleto.filter((item) => {
       const matchStatus = !filtroStatus || item.status === filtroStatus;
+      const matchSupervisor = !filtroSupervisor || normalizeText(item.supervisor).includes(normalizeText(filtroSupervisor));
       const matchTurno = !filtroTurno || item.turno === filtroTurno;
       const matchTurma = !filtroTurma || item.turma === filtroTurma;
-      return matchStatus && matchTurno && matchTurma;
+      return matchStatus && matchSupervisor && matchTurno && matchTurma;
     });
-  }, [filtroStatus, filtroTurno, filtroTurma, historicoCompleto]);
+  }, [filtroStatus, filtroSupervisor, filtroTurno, filtroTurma, historicoCompleto]);
 
   const filtrados = useMemo(() => {
     if (!nomeFiltro) {
@@ -1464,6 +1516,12 @@ function HistoricoOpcoesPage() {
           placeholder="Filtrar por painel"
           value={filtroNome}
           onChange={(event) => setFiltroNome(event.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Filtrar por supervisao"
+          value={filtroSupervisor}
+          onChange={(event) => setFiltroSupervisor(event.target.value)}
         />
         <select value={filtroStatus} onChange={(event) => setFiltroStatus(event.target.value)}>
           <option value="">Todos os status</option>
@@ -1507,6 +1565,7 @@ function HistoricoOpcoesPage() {
             <th>Turno</th>
             <th>Turma</th>
             <th>Equipe Mecanica</th>
+            <th>Supervisao</th>
             <th>Inicio</th>
             <th>Fim</th>
             <th>Registro</th>
@@ -1520,6 +1579,7 @@ function HistoricoOpcoesPage() {
               <td data-label="Turno">{item.turno || '-'}</td>
               <td data-label="Turma">{item.turma || '-'}</td>
               <td data-label="Equipe Mecanica">{item.causa || '-'}</td>
+              <td data-label="Supervisao">{item.supervisor || '-'}</td>
               <td data-label="Inicio">{item.horaInicio || '-'}</td>
               <td data-label="Fim">{item.horaFim || '-'}</td>
               <td data-label="Registro">{item.dataHoraRegistro || '-'}</td>
@@ -1529,6 +1589,144 @@ function HistoricoOpcoesPage() {
       </table>
 
       {filtrados.length === 0 && <div className="empty-state">Nenhum item encontrado para o filtro atual.</div>}
+
+      <PageFooter />
+    </main>
+  );
+}
+
+function HistoricoDatasPage() {
+  const [historicoParadas, setHistoricoParadas] = useState([]);
+  const [dataInicial, setDataInicial] = useState('');
+  const [dataFinal, setDataFinal] = useState('');
+  const [supervisorFiltro, setSupervisorFiltro] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadHistorico() {
+      const state = await getState();
+      if (active) {
+        setHistoricoParadas(Array.isArray(state.historicoParadas) ? state.historicoParadas : []);
+      }
+    }
+
+    loadHistorico();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const intervaloInvalido = Boolean(dataInicial && dataFinal && dataInicial > dataFinal);
+
+  const supervisores = useMemo(() => {
+    return [...new Set(
+      historicoParadas
+        .map((item) => String(item.supervisor || '').trim())
+        .filter(Boolean)
+    )].sort((first, second) => first.localeCompare(second, 'pt-BR'));
+  }, [historicoParadas]);
+
+  const filtrados = useMemo(() => {
+    if (intervaloInvalido) {
+      return [];
+    }
+
+    return historicoParadas.filter((item) => {
+      const dataRegistro = getRecordDateKey(item.dataHoraRegistro);
+      const atendeInicio = !dataInicial || (dataRegistro && dataRegistro >= dataInicial);
+      const atendeFim = !dataFinal || (dataRegistro && dataRegistro <= dataFinal);
+      const atendeSupervisor = !supervisorFiltro || item.supervisor === supervisorFiltro;
+      return atendeInicio && atendeFim && atendeSupervisor;
+    });
+  }, [dataInicial, dataFinal, historicoParadas, intervaloInvalido, supervisorFiltro]);
+
+  const tempoTotal = useMemo(() => {
+    const total = filtrados.reduce((sum, item) => sum + getDurationInMinutes(item), 0);
+    return formatMinutes(total);
+  }, [filtrados]);
+
+  function limparFiltros() {
+    setDataInicial('');
+    setDataFinal('');
+    setSupervisorFiltro('');
+  }
+
+  return (
+    <main className="page-shell">
+      <Header title="Filtro de Historico por Data" />
+
+      <div className="page-actions">
+        <LinkButton to="/">Voltar ao painel</LinkButton>
+        <button className="btn secundario" type="button" onClick={limparFiltros}>Limpar filtros</button>
+      </div>
+
+      <section className="filter-bar date-filter-bar" aria-label="Filtro por periodo">
+        <div className="form-field">
+          <label htmlFor="data-inicial">Data inicial</label>
+          <input id="data-inicial" type="date" value={dataInicial} onChange={(event) => setDataInicial(event.target.value)} />
+        </div>
+        <div className="form-field">
+          <label htmlFor="data-final">Data final</label>
+          <input id="data-final" type="date" value={dataFinal} onChange={(event) => setDataFinal(event.target.value)} />
+        </div>
+        <div className="form-field">
+          <label htmlFor="supervisor-filtro">Supervisao</label>
+          <select id="supervisor-filtro" value={supervisorFiltro} onChange={(event) => setSupervisorFiltro(event.target.value)}>
+            <option value="">Todas as supervisoes</option>
+            {supervisores.map((supervisor) => (
+              <option key={supervisor} value={supervisor}>{supervisor}</option>
+            ))}
+          </select>
+        </div>
+      </section>
+
+      {intervaloInvalido && <div className="form-error">A data inicial deve ser anterior ou igual a data final.</div>}
+
+      <section className="summary-cards">
+        <article className="card">
+          <span>Paradas encontradas</span>
+          <strong>{filtrados.length}</strong>
+        </article>
+        <article className="card">
+          <span>Tempo total de parada</span>
+          <strong>{tempoTotal}</strong>
+        </article>
+      </section>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Painel</th>
+            <th>Status</th>
+            <th>Turno</th>
+            <th>Turma</th>
+            <th>Equipe de Manutencao</th>
+            <th>Supervisao</th>
+            <th>Inicio</th>
+            <th>Fim</th>
+            <th>Registro</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtrados.map((item) => (
+            <tr key={item.idHistorico}>
+              <td data-label="Painel">{item.nome || '-'}</td>
+              <td data-label="Status">{item.status || '-'}</td>
+              <td data-label="Turno">{item.turno || '-'}</td>
+              <td data-label="Turma">{item.turma || '-'}</td>
+              <td data-label="Equipe de Manutencao">{item.causa || '-'}</td>
+              <td data-label="Supervisao">{item.supervisor || '-'}</td>
+              <td data-label="Inicio">{item.horaInicio || '-'}</td>
+              <td data-label="Fim">{item.horaFim || '-'}</td>
+              <td data-label="Registro">{item.dataHoraRegistro || '-'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {filtrados.length === 0 && <div className="empty-state">Nenhuma parada encontrada para o periodo informado.</div>}
 
       <PageFooter />
     </main>
@@ -2219,6 +2417,7 @@ export default function App() {
         <Route path="/historico" element={renderProtectedPage('historico', <HistoricoPage />)} />
         <Route path="/relatorio-turnos" element={renderProtectedPage('relatorio-turnos', <RelatorioPorTurnoPage />)} />
         <Route path="/historico-opcoes" element={renderProtectedPage('historico-opcoes', <HistoricoOpcoesPage />)} />
+        <Route path="/filtro-datas" element={renderProtectedPage('historico-datas', <HistoricoDatasPage />)} />
         <Route path="/dashboard-turnos" element={renderProtectedPage('dashboard-turnos', <DashboardTurnosPage />)} />
         <Route path="/agente-ia" element={renderProtectedPage('agente-ia', <AgenteIAPage />)} />
         <Route path="/admin-acessos" element={<AdminAccessPage isAdmin={isAdmin} />} />

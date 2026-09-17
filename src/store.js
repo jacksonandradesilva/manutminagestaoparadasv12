@@ -12,6 +12,7 @@ export const PAGE_ACCESS_KEYS = [
   'historico',
   'relatorio-turnos',
   'historico-opcoes',
+  'historico-datas',
   'dashboard-turnos',
   'agente-ia'
 ];
