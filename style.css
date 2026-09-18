@@ -1,15 +1,17 @@
-:root {
-	/* Cores Primárias */
-	--primary: #2563eb;
-	--primary-dark: #1e40af;
-	--primary-light: #3b82f6;
-	--primary-lighter: #60a5fa;
-	--primary-ultra-light: #dbeafe;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-	/* Cores Secundárias */
-	--secondary: #64748b;
-	--secondary-light: #94a3b8;
-	--secondary-lighter: #cbd5e1;
+:root {
+	--text: #060704;
+	--background: #f8faf3;
+	--primary: #a5be4d;
+	--secondary: #cfdf94;
+	--accent: #c0da63;
+	--primary-dark: #71852c;
+	--primary-light: #c0da63;
+	--primary-lighter: #cfdf94;
+	--primary-ultra-light: #eef4d8;
+	--secondary-light: #dce7ae;
+	--secondary-lighter: #e9f0ca;
 
 	/* Cores de Status */
 	--success: #10b981;
@@ -33,37 +35,33 @@
 	--info-bg: #f0f9ff;
 
 	/* Cores de Fundo e Superfície */
-	--background: #f8fafc;
-	--background-alt: #f1f5f9;
+	--background-alt: #eef4d8;
 	--surface: #ffffff;
 	--surface-alt: #f9fafb;
 
 	/* Cores de Texto */
-	--text-primary: #0f172a;
-	--text-secondary: #475569;
-	--text-tertiary: #64748b;
+	--text-primary: var(--text);
+	--text-secondary: #4f5939;
+	--text-tertiary: #697451;
 
 	/* Cores de Borda */
-	--border: #e2e8f0;
-	--border-light: #f1f5f9;
-	--border-dark: #cbd5e1;
+	--border: #d8e2b5;
+	--border-light: #eef4d8;
+	--border-dark: #b8ca70;
 
 	/* Gradientes */
-	--gradient-primary: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-	--gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-	--gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-	--gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-	--gradient-info: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-	--gradient-vibrant: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	--gradient-sunset: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-	--gradient-ocean: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+	--gradient-primary: var(--primary);
+	--gradient-success: var(--success);
+	--gradient-warning: var(--warning);
+	--gradient-danger: var(--danger);
+	--gradient-info: var(--info);
 
 	/* Sombras */
-	--shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-	--shadow-md: 0 4px 6px rgba(15, 23, 42, 0.1);
-	--shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.15);
-	--shadow-xl: 0 20px 40px rgba(15, 23, 42, 0.2);
-	--shadow-colored: 0 8px 16px rgba(37, 99, 235, 0.15);
+	--shadow-sm: 0 2px 0 rgba(6, 7, 4, 0.12);
+	--shadow-md: 0 3px 0 rgba(6, 7, 4, 0.16);
+	--shadow-lg: 0 4px 0 rgba(6, 7, 4, 0.18);
+	--shadow-xl: 0 5px 0 rgba(6, 7, 4, 0.2);
+	--shadow-colored: 0 2px 0 rgba(6, 7, 4, 0.18);
 
 	/* Transição */
 	--transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -119,8 +117,7 @@ h2 {
 	border-bottom: 2px solid var(--border);
 	background: linear-gradient(90deg, transparent 0%, var(--primary-ultra-light) 100%);
 	padding: 20px;
-	border-radius: 8px;
-	margin: -32px -32px 32px -32px;
+	border-radius: 4px;
 	padding-left: 32px;
 	padding-right: 32px;
 }
@@ -144,7 +141,6 @@ h2 {
 	position: relative;
 	overflow: hidden;
 }
-
 .page-shell::before {
 	content: '';
 	position: absolute;
@@ -1162,3 +1158,106 @@ select:disabled {
 
 .opacity-50 { opacity: 0.5; }
 .opacity-75 { opacity: 0.75; }
+
+/* Aplicacao dos tokens do Design System */
+body {
+	font-family: sans-serif;
+	background: var(--background);
+	color: var(--text);
+	padding: 16px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: 'Inter', sans-serif;
+	color: var(--text);
+	letter-spacing: normal;
+}
+
+.page-shell,
+.auth-card,
+.card,
+.modal-content,
+table,
+.session-bar {
+	border-radius: 4px;
+	box-shadow: var(--shadow-sm);
+}
+
+.page-shell {
+	background: var(--surface);
+	padding: 32px;
+}
+
+.page-header,
+.session-bar {
+	background: var(--secondary);
+}
+
+.btn-link,
+button {
+	border-radius: 4px;
+	font-weight: 700;
+	padding: 8px 16px;
+	box-shadow: var(--shadow-colored);
+}
+
+.btn-link,
+button[type='submit'] {
+	background: var(--primary);
+	color: var(--text);
+}
+
+.btn-link:hover,
+button[type='submit']:hover {
+	background: var(--accent);
+	box-shadow: var(--shadow-md);
+	transform: translateY(-1px);
+}
+
+.btn.secundario,
+button[type='button'] {
+	background: var(--text);
+	color: var(--background);
+	border-color: var(--text);
+}
+
+.btn.secundario:hover,
+button[type='button']:hover {
+	background: var(--primary-dark);
+	color: var(--background);
+	box-shadow: var(--shadow-md);
+}
+
+input,
+select,
+textarea,
+form input,
+form textarea,
+form select,
+.filter-bar input,
+.filter-bar select {
+	border-radius: 4px;
+	padding: 8px 16px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+form input:focus,
+form textarea:focus,
+form select:focus,
+.filter-bar input:focus,
+.filter-bar select:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--secondary);
+	background: var(--surface);
+	transform: none;
+}
