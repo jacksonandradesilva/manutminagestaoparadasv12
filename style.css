@@ -1,15 +1,17 @@
-:root {
-	/* Cores Primárias */
-	--primary: #2563eb;
-	--primary-dark: #1e40af;
-	--primary-light: #3b82f6;
-	--primary-lighter: #60a5fa;
-	--primary-ultra-light: #dbeafe;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-	/* Cores Secundárias */
-	--secondary: #64748b;
-	--secondary-light: #94a3b8;
-	--secondary-lighter: #cbd5e1;
+:root {
+	--text: #0f080a;
+	--background: #fcfafb;
+	--primary: #8c043c;
+	--secondary: #c9b39e;
+	--accent: #baae83;
+	--primary-dark: #5f032b;
+	--primary-light: #ba678a;
+	--primary-lighter: #e4bfd0;
+	--primary-ultra-light: #f8edf2;
+	--secondary-light: #ddcab2;
+	--secondary-lighter: #efe4d7;
 
 	/* Cores de Status */
 	--success: #10b981;
@@ -33,37 +35,33 @@
 	--info-bg: #f0f9ff;
 
 	/* Cores de Fundo e Superfície */
-	--background: #f8fafc;
-	--background-alt: #f1f5f9;
+	--background-alt: #f5efe9;
 	--surface: #ffffff;
-	--surface-alt: #f9fafb;
+	--surface-alt: #faf7f3;
 
 	/* Cores de Texto */
-	--text-primary: #0f172a;
-	--text-secondary: #475569;
-	--text-tertiary: #64748b;
+	--text-primary: var(--text);
+	--text-secondary: #4a3c3f;
+	--text-tertiary: #6a565a;
 
 	/* Cores de Borda */
-	--border: #e2e8f0;
-	--border-light: #f1f5f9;
-	--border-dark: #cbd5e1;
+	--border: #d9c9c1;
+	--border-light: #f2eae6;
+	--border-dark: #b59d90;
 
 	/* Gradientes */
-	--gradient-primary: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-	--gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-	--gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-	--gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-	--gradient-info: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-	--gradient-vibrant: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	--gradient-sunset: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-	--gradient-ocean: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+	--gradient-primary: var(--primary);
+	--gradient-success: var(--success);
+	--gradient-warning: var(--warning);
+	--gradient-danger: var(--danger);
+	--gradient-info: var(--info);
 
 	/* Sombras */
-	--shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-	--shadow-md: 0 4px 6px rgba(15, 23, 42, 0.1);
-	--shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.15);
-	--shadow-xl: 0 20px 40px rgba(15, 23, 42, 0.2);
-	--shadow-colored: 0 8px 16px rgba(37, 99, 235, 0.15);
+	--shadow-sm: 0 2px 0 rgba(15, 8, 10, 0.12);
+	--shadow-md: 0 3px 0 rgba(15, 8, 10, 0.16);
+	--shadow-lg: 0 4px 0 rgba(15, 8, 10, 0.18);
+	--shadow-xl: 0 5px 0 rgba(15, 8, 10, 0.2);
+	--shadow-colored: 0 2px 0 rgba(171, 105, 132, 0.2);
 
 	/* Transição */
 	--transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -80,7 +78,7 @@ html {
 body {
 	margin: 0;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e0e7ff 100%);
+	background: linear-gradient(135deg, var(--background) 0%, var(--background-alt) 50%, var(--secondary-lighter) 100%);
 	color: var(--text-primary);
 	padding: 24px;
 	line-height: 1.6;
@@ -117,10 +115,9 @@ h2 {
 	flex-wrap: wrap;
 	padding-bottom: 24px;
 	border-bottom: 2px solid var(--border);
-	background: linear-gradient(90deg, transparent 0%, var(--primary-ultra-light) 100%);
+	background: linear-gradient(90deg, var(--secondary-lighter) 0%, var(--secondary) 100%);
 	padding: 20px;
-	border-radius: 8px;
-	margin: -32px -32px 32px -32px;
+	border-radius: 4px;
 	padding-left: 32px;
 	padding-right: 32px;
 }
@@ -144,7 +141,6 @@ h2 {
 	position: relative;
 	overflow: hidden;
 }
-
 .page-shell::before {
 	content: '';
 	position: absolute;
@@ -261,7 +257,7 @@ h2 {
 }
 
 .turno-tab-btn {
-	background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+	background: linear-gradient(135deg, var(--primary-ultra-light) 0%, var(--secondary-lighter) 100%);
 	color: var(--text-secondary);
 	transition: var(--transition);
 	font-weight: 500;
@@ -269,7 +265,7 @@ h2 {
 }
 
 .turno-tab-btn:hover {
-	background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+	background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--secondary-light) 100%);
 	color: var(--text-primary);
 	border-color: var(--primary-light);
 }
@@ -334,7 +330,7 @@ button[type="submit"]:hover::before {
 
 .btn-link:hover,
 button[type="submit"]:hover {
-	background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+	background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
 	box-shadow: var(--shadow-lg);
 	transform: translateY(-2px);
 }
@@ -904,8 +900,8 @@ tbody tr:nth-child(even):hover {
 }
 
 .badge-primary {
-	background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-	color: #1e40af;
+	background: linear-gradient(135deg, var(--primary-ultra-light) 0%, var(--primary-lighter) 100%);
+	color: var(--primary-dark);
 	border-left: 3px solid var(--primary-dark);
 }
 
@@ -1162,3 +1158,106 @@ select:disabled {
 
 .opacity-50 { opacity: 0.5; }
 .opacity-75 { opacity: 0.75; }
+
+/* Aplicacao dos tokens do Design System */
+body {
+	font-family: sans-serif;
+	background: var(--background);
+	color: var(--text);
+	padding: 16px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: 'Inter', sans-serif;
+	color: var(--text);
+	letter-spacing: normal;
+}
+
+.page-shell,
+.auth-card,
+.card,
+.modal-content,
+table,
+.session-bar {
+	border-radius: 4px;
+	box-shadow: var(--shadow-sm);
+}
+
+.page-shell {
+	background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
+	padding: 32px;
+}
+
+.page-header,
+.session-bar {
+	background: linear-gradient(90deg, var(--secondary-lighter) 0%, var(--secondary) 100%);
+}
+
+.btn-link,
+button {
+	border-radius: 4px;
+	font-weight: 700;
+	padding: 8px 16px;
+	box-shadow: var(--shadow-colored);
+}
+
+.btn-link,
+button[type='submit'] {
+	background: var(--primary);
+	color: var(--background);
+}
+
+.btn-link:hover,
+button[type='submit']:hover {
+	background: var(--primary-dark);
+	box-shadow: var(--shadow-md);
+	transform: translateY(-1px);
+}
+
+.btn.secundario,
+button[type='button'] {
+	background: var(--background);
+	color: var(--text);
+	border-color: var(--border);
+}
+
+.btn.secundario:hover,
+button[type='button']:hover {
+	background: var(--secondary-lighter);
+	color: var(--text);
+	box-shadow: var(--shadow-md);
+}
+
+input,
+select,
+textarea,
+form input,
+form textarea,
+form select,
+.filter-bar input,
+.filter-bar select {
+	border-radius: 4px;
+	padding: 8px 16px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+form input:focus,
+form textarea:focus,
+form select:focus,
+.filter-bar input:focus,
+.filter-bar select:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-lighter);
+	background: var(--surface);
+	transform: none;
+}
