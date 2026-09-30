@@ -1165,6 +1165,26 @@ function DashboardPage({ pagePermissions }) {
   );
 }
 
+function toDateTimeLocalValue(value) {
+  if (!value) {
+    return '';
+  }
+
+  const directDate = new Date(value);
+  if (!Number.isNaN(directDate.getTime())) {
+    const pad = (number) => String(number).padStart(2, '0');
+    return `${directDate.getFullYear()}-${pad(directDate.getMonth() + 1)}-${pad(directDate.getDate())}T${pad(directDate.getHours())}:${pad(directDate.getMinutes())}`;
+  }
+
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) {
+    return '';
+  }
+
+  const [, day, month, year, hours, minutes] = match;
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 function HistoricoPage() {
   const [historicoParadas, setHistoricoParadas] = useState([]);
   const [observacoes, setObservacoes] = useState('');
@@ -1178,6 +1198,7 @@ function HistoricoPage() {
     supervisor: '',
     horaInicio: '',
     horaFim: '',
+    dataHoraRegistro: '',
     acao: 'corretiva'
   });
 
@@ -1222,6 +1243,7 @@ function HistoricoPage() {
       supervisor: '',
       horaInicio: '',
       horaFim: '',
+      dataHoraRegistro: '',
       acao: 'corretiva'
     });
   }
@@ -1237,6 +1259,7 @@ function HistoricoPage() {
       supervisor: item.supervisor || '',
       horaInicio: item.horaInicio || '',
       horaFim: item.horaFim || '',
+      dataHoraRegistro: toDateTimeLocalValue(item.dataHoraRegistro || ''),
       acao: ['corretiva', 'preventiva', 'preditiva', 'programada'].includes(item.acao) ? item.acao : 'corretiva'
     });
   }
@@ -1275,7 +1298,8 @@ function HistoricoPage() {
         ...editData,
         nome: editData.nome.trim(),
         causa: editData.causa.trim(),
-        supervisor: editData.supervisor.trim()
+        supervisor: editData.supervisor.trim(),
+        dataHoraRegistro: editData.dataHoraRegistro ? formatDateTime(new Date(editData.dataHoraRegistro)) : item.dataHoraRegistro
       };
     });
 
@@ -1357,6 +1381,14 @@ function HistoricoPage() {
               type="time"
               value={editData.horaFim}
               onChange={(event) => setEditData({ ...editData, horaFim: event.target.value })}
+            />
+          </div>
+          <div className="form-field">
+            <label>Data do Registro</label>
+            <input
+              type="datetime-local"
+              value={editData.dataHoraRegistro}
+              onChange={(event) => setEditData({ ...editData, dataHoraRegistro: event.target.value })}
             />
           </div>
           <div className="form-field">

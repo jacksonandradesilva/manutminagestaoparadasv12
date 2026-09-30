@@ -5,19 +5,19 @@ Esta é uma página de autenticação simples e minimalista
 
 ## 2. Fundações
 - Paleta de Cores
-  --text: #060704;
-  --background: #f8faf3;
-  --primary: #a5be4d;
-  --secondary: #cfdf94;
-  --accent: #c0da63;
+  - Base:
+    - --text: #0f080a;
+    - --background: #fcfafb;
+    - --primary: #8c043c;
+    - --secondary: #c9b39e;
+    - --accent: #baae83;
 
 - Tipografia
-  - Titulos:     Inter (via Google Fonts)
-  - Texto normal: Sans-Sering
-
+  - Títulos: Inter (via Google Fonts)
+  - Texto normal: Sans-Serif
 
 - Espaçamento
-  - Grande ( 8 ou 16px)
+  - Grande (8 ou 16px)
 
 ## 3. Componentes
  -Botões:

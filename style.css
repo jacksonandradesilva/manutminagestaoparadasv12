@@ -1,17 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-	--text: #060704;
-	--background: #f8faf3;
-	--primary: #a5be4d;
-	--secondary: #cfdf94;
-	--accent: #c0da63;
-	--primary-dark: #71852c;
-	--primary-light: #c0da63;
-	--primary-lighter: #cfdf94;
-	--primary-ultra-light: #eef4d8;
-	--secondary-light: #dce7ae;
-	--secondary-lighter: #e9f0ca;
+	--text: #0f080a;
+	--background: #fcfafb;
+	--primary: #8c043c;
+	--secondary: #c9b39e;
+	--accent: #baae83;
+	--primary-dark: #5f032b;
+	--primary-light: #ba678a;
+	--primary-lighter: #e4bfd0;
+	--primary-ultra-light: #f8edf2;
+	--secondary-light: #ddcab2;
+	--secondary-lighter: #efe4d7;
 
 	/* Cores de Status */
 	--success: #10b981;
@@ -35,19 +35,19 @@
 	--info-bg: #f0f9ff;
 
 	/* Cores de Fundo e Superfície */
-	--background-alt: #eef4d8;
+	--background-alt: #f5efe9;
 	--surface: #ffffff;
-	--surface-alt: #f9fafb;
+	--surface-alt: #faf7f3;
 
 	/* Cores de Texto */
 	--text-primary: var(--text);
-	--text-secondary: #4f5939;
-	--text-tertiary: #697451;
+	--text-secondary: #4a3c3f;
+	--text-tertiary: #6a565a;
 
 	/* Cores de Borda */
-	--border: #d8e2b5;
-	--border-light: #eef4d8;
-	--border-dark: #b8ca70;
+	--border: #d9c9c1;
+	--border-light: #f2eae6;
+	--border-dark: #b59d90;
 
 	/* Gradientes */
 	--gradient-primary: var(--primary);
@@ -57,11 +57,11 @@
 	--gradient-info: var(--info);
 
 	/* Sombras */
-	--shadow-sm: 0 2px 0 rgba(6, 7, 4, 0.12);
-	--shadow-md: 0 3px 0 rgba(6, 7, 4, 0.16);
-	--shadow-lg: 0 4px 0 rgba(6, 7, 4, 0.18);
-	--shadow-xl: 0 5px 0 rgba(6, 7, 4, 0.2);
-	--shadow-colored: 0 2px 0 rgba(6, 7, 4, 0.18);
+	--shadow-sm: 0 2px 0 rgba(15, 8, 10, 0.12);
+	--shadow-md: 0 3px 0 rgba(15, 8, 10, 0.16);
+	--shadow-lg: 0 4px 0 rgba(15, 8, 10, 0.18);
+	--shadow-xl: 0 5px 0 rgba(15, 8, 10, 0.2);
+	--shadow-colored: 0 2px 0 rgba(171, 105, 132, 0.2);
 
 	/* Transição */
 	--transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -78,7 +78,7 @@ html {
 body {
 	margin: 0;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e0e7ff 100%);
+	background: linear-gradient(135deg, var(--background) 0%, var(--background-alt) 50%, var(--secondary-lighter) 100%);
 	color: var(--text-primary);
 	padding: 24px;
 	line-height: 1.6;
@@ -115,7 +115,7 @@ h2 {
 	flex-wrap: wrap;
 	padding-bottom: 24px;
 	border-bottom: 2px solid var(--border);
-	background: linear-gradient(90deg, transparent 0%, var(--primary-ultra-light) 100%);
+	background: linear-gradient(90deg, var(--secondary-lighter) 0%, var(--secondary) 100%);
 	padding: 20px;
 	border-radius: 4px;
 	padding-left: 32px;
@@ -257,7 +257,7 @@ h2 {
 }
 
 .turno-tab-btn {
-	background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+	background: linear-gradient(135deg, var(--primary-ultra-light) 0%, var(--secondary-lighter) 100%);
 	color: var(--text-secondary);
 	transition: var(--transition);
 	font-weight: 500;
@@ -265,7 +265,7 @@ h2 {
 }
 
 .turno-tab-btn:hover {
-	background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+	background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--secondary-light) 100%);
 	color: var(--text-primary);
 	border-color: var(--primary-light);
 }
@@ -330,7 +330,7 @@ button[type="submit"]:hover::before {
 
 .btn-link:hover,
 button[type="submit"]:hover {
-	background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+	background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
 	box-shadow: var(--shadow-lg);
 	transform: translateY(-2px);
 }
@@ -900,8 +900,8 @@ tbody tr:nth-child(even):hover {
 }
 
 .badge-primary {
-	background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-	color: #1e40af;
+	background: linear-gradient(135deg, var(--primary-ultra-light) 0%, var(--primary-lighter) 100%);
+	color: var(--primary-dark);
 	border-left: 3px solid var(--primary-dark);
 }
 
@@ -1189,13 +1189,13 @@ table,
 }
 
 .page-shell {
-	background: var(--surface);
+	background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
 	padding: 32px;
 }
 
 .page-header,
 .session-bar {
-	background: var(--secondary);
+	background: linear-gradient(90deg, var(--secondary-lighter) 0%, var(--secondary) 100%);
 }
 
 .btn-link,
@@ -1209,27 +1209,27 @@ button {
 .btn-link,
 button[type='submit'] {
 	background: var(--primary);
-	color: var(--text);
+	color: var(--background);
 }
 
 .btn-link:hover,
 button[type='submit']:hover {
-	background: var(--accent);
+	background: var(--primary-dark);
 	box-shadow: var(--shadow-md);
 	transform: translateY(-1px);
 }
 
 .btn.secundario,
 button[type='button'] {
-	background: var(--text);
-	color: var(--background);
-	border-color: var(--text);
+	background: var(--background);
+	color: var(--text);
+	border-color: var(--border);
 }
 
 .btn.secundario:hover,
 button[type='button']:hover {
-	background: var(--primary-dark);
-	color: var(--background);
+	background: var(--secondary-lighter);
+	color: var(--text);
 	box-shadow: var(--shadow-md);
 }
 
@@ -1257,7 +1257,7 @@ form select:focus,
 .filter-bar input:focus,
 .filter-bar select:focus {
 	border-color: var(--primary);
-	box-shadow: 0 0 0 3px var(--secondary);
+	box-shadow: 0 0 0 3px var(--primary-lighter);
 	background: var(--surface);
 	transform: none;
 }
