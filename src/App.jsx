@@ -35,10 +35,13 @@ const TURNOS = ['A', 'B', 'C', 'D'];
 const PAGE_ACCESS_OPTIONS = [
   { key: 'dashboard', label: 'Painel principal', path: '/' },
   { key: 'historico', label: 'Gestao de parada', path: '/historico' },
+  { key: 'historico-editar', label: 'Editar registros da gestao de parada', path: '/historico' },
+  { key: 'historico-excluir', label: 'Excluir registros da gestao de parada', path: '/historico' },
   { key: 'relatorio-turnos', label: 'Relatorio por turno', path: '/relatorio-turnos' },
   { key: 'historico-opcoes', label: 'Historico por opcao', path: '/historico-opcoes' },
   { key: 'historico-datas', label: 'Filtro por data', path: '/filtro-datas' },
   { key: 'dashboard-turnos', label: 'Dashboard por turno', path: '/dashboard-turnos' },
+  { key: 'graficos-supervisao', label: 'Graficos por supervisao', path: '/graficos-supervisao' },
   { key: 'agente-ia', label: 'Agente IA', path: '/agente-ia' }
 ];
 
@@ -1010,6 +1013,7 @@ function DashboardPage({ pagePermissions }) {
         {pagePermissions['historico-opcoes'] && <LinkButton to="/historico-opcoes">Historico por Opcao</LinkButton>}
         {pagePermissions['historico-datas'] && <LinkButton to="/filtro-datas">Filtrar Historico por Data</LinkButton>}
         {pagePermissions['dashboard-turnos'] && <LinkButton to="/dashboard-turnos">Dashboard por Turno</LinkButton>}
+        {pagePermissions['graficos-supervisao'] && <LinkButton to="/graficos-supervisao">Graficos por Supervisao</LinkButton>}
         {pagePermissions['agente-ia'] && <LinkButton to="/agente-ia">Agente IA</LinkButton>}
         {equipamentos.some((e) => e.status === 'parado') && (
           <button type="button" className="btn excluir" onClick={limparStatusParado}>Limpar Status Parado</button>
@@ -1165,27 +1169,36 @@ function DashboardPage({ pagePermissions }) {
   );
 }
 
-function toDateTimeLocalValue(value) {
-  if (!value) {
-    return '';
-  }
-
-  const directDate = new Date(value);
-  if (!Number.isNaN(directDate.getTime())) {
-    const pad = (number) => String(number).padStart(2, '0');
-    return `${directDate.getFullYear()}-${pad(directDate.getMonth() + 1)}-${pad(directDate.getDate())}T${pad(directDate.getHours())}:${pad(directDate.getMinutes())}`;
-  }
-
-  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}):(\d{2})(?::(\d{2}))?$/);
+function parseBrazilianDateTime(value) {
+  const match = String(value || '').trim().match(/^(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}):(\d{2})(?::(\d{2}))?$/);
   if (!match) {
-    return '';
+    return null;
   }
 
-  const [, day, month, year, hours, minutes] = match;
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  const [, dayText, monthText, yearText, hoursText, minutesText, secondsText = '00'] = match;
+  const day = Number(dayText);
+  const month = Number(monthText);
+  const year = Number(yearText);
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
+  const seconds = Number(secondsText);
+  const date = new Date(year, month - 1, day, hours, minutes, seconds);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day ||
+    date.getHours() !== hours ||
+    date.getMinutes() !== minutes ||
+    date.getSeconds() !== seconds
+  ) {
+    return null;
+  }
+
+  return date;
 }
 
-function HistoricoPage() {
+function HistoricoPage({ pagePermissions }) {
   const [historicoParadas, setHistoricoParadas] = useState([]);
   const [observacoes, setObservacoes] = useState('');
   const [editId, setEditId] = useState(null);
@@ -1249,6 +1262,10 @@ function HistoricoPage() {
   }
 
   function abrirEdicao(item) {
+    if (!pagePermissions['historico-editar']) {
+      return;
+    }
+
     setEditId(item.idHistorico);
     setEditData({
       nome: item.nome || '',
@@ -1259,7 +1276,7 @@ function HistoricoPage() {
       supervisor: item.supervisor || '',
       horaInicio: item.horaInicio || '',
       horaFim: item.horaFim || '',
-      dataHoraRegistro: toDateTimeLocalValue(item.dataHoraRegistro || ''),
+      dataHoraRegistro: item.dataHoraRegistro || '',
       acao: ['corretiva', 'preventiva', 'preditiva', 'programada'].includes(item.acao) ? item.acao : 'corretiva'
     });
   }
@@ -1276,6 +1293,10 @@ function HistoricoPage() {
   }
 
   async function excluirItem(id) {
+    if (!pagePermissions['historico-excluir']) {
+      return;
+    }
+
     const next = historicoParadas.filter((item) => item.idHistorico !== id);
     setHistoricoParadas(next);
     await saveHistoricoParadas(next);
@@ -1285,6 +1306,16 @@ function HistoricoPage() {
     event.preventDefault();
 
     if (editId === null) {
+      return;
+    }
+
+    const dataHoraRegistroInformada = editData.dataHoraRegistro.trim();
+    const dataHoraRegistroConvertida = dataHoraRegistroInformada
+      ? parseBrazilianDateTime(dataHoraRegistroInformada)
+      : null;
+
+    if (dataHoraRegistroInformada && !dataHoraRegistroConvertida) {
+      window.alert('Informe a data no formato dd/mm/aaaa, hh:mm:ss.');
       return;
     }
 
@@ -1299,7 +1330,9 @@ function HistoricoPage() {
         nome: editData.nome.trim(),
         causa: editData.causa.trim(),
         supervisor: editData.supervisor.trim(),
-        dataHoraRegistro: editData.dataHoraRegistro ? formatDateTime(new Date(editData.dataHoraRegistro)) : item.dataHoraRegistro
+        dataHoraRegistro: dataHoraRegistroConvertida
+          ? formatDateTime(dataHoraRegistroConvertida)
+          : item.dataHoraRegistro
       };
     });
 
@@ -1316,7 +1349,7 @@ function HistoricoPage() {
         <LinkButton to="/">Voltar ao painel</LinkButton>
       </div>
 
-      {editId !== null && (
+      {editId !== null && pagePermissions['historico-editar'] && (
         <form onSubmit={salvarEdicao}>
           <div className="form-field">
             <label>Painel</label>
@@ -1386,9 +1419,11 @@ function HistoricoPage() {
           <div className="form-field">
             <label>Data do Registro</label>
             <input
-              type="datetime-local"
+              type="text"
               value={editData.dataHoraRegistro}
               onChange={(event) => setEditData({ ...editData, dataHoraRegistro: event.target.value })}
+              placeholder="dd/mm/aaaa, hh:mm:ss"
+              maxLength={20}
             />
           </div>
           <div className="form-field">
@@ -1457,8 +1492,12 @@ function HistoricoPage() {
               <td data-label="Registro">{item.dataHoraRegistro || '-'}</td>
               <td data-label="Acoes">
                 <div className="acoes-inline">
-                  <button className="btn editar" type="button" onClick={() => abrirEdicao(item)}>Editar</button>
-                  <button className="btn excluir" type="button" onClick={() => excluirItem(item.idHistorico)}>Excluir</button>
+                  {pagePermissions['historico-editar'] && (
+                    <button className="btn editar" type="button" onClick={() => abrirEdicao(item)}>Editar</button>
+                  )}
+                  {pagePermissions['historico-excluir'] && (
+                    <button className="btn excluir" type="button" onClick={() => excluirItem(item.idHistorico)}>Excluir</button>
+                  )}
                 </div>
               </td>
             </tr>
@@ -2272,6 +2311,132 @@ function AgenteIAPage() {
   );
 }
 
+function GraficosSupervisaoPage() {
+  const [historicoParadas, setHistoricoParadas] = useState([]);
+  const [dataInicial, setDataInicial] = useState('');
+  const [dataFinal, setDataFinal] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadHistorico() {
+      const state = await getState();
+      if (active) {
+        setHistoricoParadas(Array.isArray(state.historicoParadas) ? state.historicoParadas : []);
+      }
+    }
+
+    loadHistorico();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const intervaloInvalido = Boolean(dataInicial && dataFinal && dataInicial > dataFinal);
+
+  const paradasFiltradas = useMemo(() => {
+    if (intervaloInvalido) {
+      return [];
+    }
+
+    return historicoParadas.filter((item) => {
+      const dataRegistro = getRecordDateKey(item.dataHoraRegistro);
+      const atendeInicio = !dataInicial || (dataRegistro && dataRegistro >= dataInicial);
+      const atendeFim = !dataFinal || (dataRegistro && dataRegistro <= dataFinal);
+      return atendeInicio && atendeFim;
+    });
+  }, [dataFinal, dataInicial, historicoParadas, intervaloInvalido]);
+
+  const resumoSupervisoes = useMemo(() => {
+    const agrupado = new Map();
+
+    paradasFiltradas.forEach((item) => {
+      const nome = String(item.supervisor || '').trim() || 'Nao informado';
+      const atual = agrupado.get(nome) || { nome, quantidade: 0, minutos: 0 };
+      atual.quantidade += 1;
+      atual.minutos += getDurationInMinutes(item);
+      agrupado.set(nome, atual);
+    });
+
+    return [...agrupado.values()].sort((first, second) => second.minutos - first.minutos);
+  }, [paradasFiltradas]);
+
+  const totalMinutos = resumoSupervisoes.reduce((total, item) => total + item.minutos, 0);
+  const maiorDuracao = resumoSupervisoes[0]?.minutos || 0;
+
+  return (
+    <main className="page-shell">
+      <Header title="Graficos de Horas de Parada por Supervisao" />
+
+      <div className="page-actions">
+        <LinkButton to="/">Voltar ao painel</LinkButton>
+      </div>
+
+      <section className="filter-bar date-filter-bar" aria-label="Filtro por periodo">
+        <div className="form-field">
+          <label htmlFor="grafico-data-inicial">Data inicial</label>
+          <input id="grafico-data-inicial" type="date" value={dataInicial} onChange={(event) => setDataInicial(event.target.value)} />
+        </div>
+        <div className="form-field">
+          <label htmlFor="grafico-data-final">Data final</label>
+          <input id="grafico-data-final" type="date" value={dataFinal} onChange={(event) => setDataFinal(event.target.value)} />
+        </div>
+      </section>
+
+      {intervaloInvalido && <div className="form-error">A data inicial deve ser anterior ou igual a data final.</div>}
+
+      <section className="summary-cards">
+        <article className="card">
+          <span>Horas totais de parada</span>
+          <strong>{formatMinutes(totalMinutos)}</strong>
+        </article>
+        <article className="card">
+          <span>Supervisoes no periodo</span>
+          <strong>{resumoSupervisoes.length}</strong>
+        </article>
+        <article className="card">
+          <span>Registros de parada</span>
+          <strong>{paradasFiltradas.length}</strong>
+        </article>
+      </section>
+
+      <section className="supervisor-chart" aria-labelledby="supervisor-chart-title">
+        <div className="supervisor-chart-heading">
+          <div>
+            <h2 id="supervisor-chart-title">Horas acumuladas por supervisao</h2>
+            <p>Duracao total e quantidade de registros em cada supervisao</p>
+          </div>
+          <span className="supervisor-chart-total">Total {formatMinutes(totalMinutos)}</span>
+        </div>
+
+        {resumoSupervisoes.length > 0 ? (
+          <div className="supervisor-chart-list">
+            {resumoSupervisoes.map((item) => (
+              <div className="supervisor-chart-row" key={item.nome}>
+                <span className="supervisor-chart-name">{item.nome}</span>
+                <div
+                  className="supervisor-chart-track"
+                  role="img"
+                  aria-label={`${item.nome}: ${formatMinutes(item.minutos)} em ${item.quantidade} paradas`}
+                >
+                  <div className="supervisor-chart-bar" style={{ width: `${maiorDuracao ? (item.minutos / maiorDuracao) * 100 : 0}%` }} />
+                </div>
+                <strong className="supervisor-chart-value">{formatMinutes(item.minutos)}</strong>
+                <span className="supervisor-chart-count">{item.quantidade} paradas</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">Nenhuma parada encontrada para o periodo informado.</div>
+        )}
+      </section>
+
+      <PageFooter />
+    </main>
+  );
+}
+
 export default function App() {
   const storageStatus = useMemo(() => getStorageStatus(), []);
   const [authLoading, setAuthLoading] = useState(storageStatus.authEnabled);
@@ -2446,11 +2611,12 @@ export default function App() {
       <SessionBar email={session?.user?.email} isAdmin={isAdmin} onSignOut={handleSignOut} />
       <Routes>
         <Route path="/" element={renderProtectedPage('dashboard', <DashboardPage pagePermissions={pagePermissions} />)} />
-        <Route path="/historico" element={renderProtectedPage('historico', <HistoricoPage />)} />
+        <Route path="/historico" element={renderProtectedPage('historico', <HistoricoPage pagePermissions={pagePermissions} />)} />
         <Route path="/relatorio-turnos" element={renderProtectedPage('relatorio-turnos', <RelatorioPorTurnoPage />)} />
         <Route path="/historico-opcoes" element={renderProtectedPage('historico-opcoes', <HistoricoOpcoesPage />)} />
         <Route path="/filtro-datas" element={renderProtectedPage('historico-datas', <HistoricoDatasPage />)} />
         <Route path="/dashboard-turnos" element={renderProtectedPage('dashboard-turnos', <DashboardTurnosPage />)} />
+        <Route path="/graficos-supervisao" element={renderProtectedPage('graficos-supervisao', <GraficosSupervisaoPage />)} />
         <Route path="/agente-ia" element={renderProtectedPage('agente-ia', <AgenteIAPage />)} />
         <Route path="/admin-acessos" element={<AdminAccessPage isAdmin={isAdmin} />} />
         <Route path="/admin-auditoria" element={<AdminAuditoriaPage isAdmin={isAdmin} />} />

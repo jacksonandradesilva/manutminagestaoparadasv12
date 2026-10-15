@@ -10,10 +10,13 @@ const STATE_ID = 'global';
 export const PAGE_ACCESS_KEYS = [
   'dashboard',
   'historico',
+  'historico-editar',
+  'historico-excluir',
   'relatorio-turnos',
   'historico-opcoes',
   'historico-datas',
   'dashboard-turnos',
+  'graficos-supervisao',
   'agente-ia'
 ];
 
