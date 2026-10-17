@@ -1,5 +1,5 @@
 // Componente principal da aplicação
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 // Importações do React Router
 import { NavLink, Route, Routes } from 'react-router-dom';
 // Importações de componentes e funções auxiliares
@@ -30,6 +30,7 @@ import {
 // Importações de componentes de página
 import { formatDateTime, formatMinutes, getDurationInMinutes } from './utils';
 // Importações de estilos
+const DowntimeTimelineChart = lazy(() => import('./DowntimeTimelineChart'));
 const TURNOS = ['A', 'B', 'C', 'D'];
 const PAGE_ACCESS_OPTIONS = [
   { key: 'dashboard', label: 'Painel principal', path: '/' },
@@ -38,7 +39,7 @@ const PAGE_ACCESS_OPTIONS = [
   { key: 'historico-excluir', label: 'Excluir registros da gestao de parada', path: '/historico' },
   { key: 'relatorio-turnos', label: 'Relatorio por turno', path: '/relatorio-turnos' },
   { key: 'historico-opcoes', label: 'Historico por opcao', path: '/historico-opcoes' },
-  { key: 'historico-datas', label: 'Filtro por data', path: '/filtro-datas' },
+  { key: 'historico-datas', label: 'Paradas por equipamento e periodo', path: '/filtro-datas' },
   { key: 'dashboard-turnos', label: 'Dashboard por turno', path: '/dashboard-turnos' },
   { key: 'graficos-supervisao', label: 'Graficos por supervisao', path: '/graficos-supervisao' },
   { key: 'agente-ia', label: 'Agente IA', path: '/agente-ia' }
@@ -131,16 +132,50 @@ function buildAgentReply(question, historicoParadas) {
   }
 
   const painelRank = groupParadasBy(baseParadas, 'nome');
+  const supervisaoRank = groupParadasBy(baseParadas, 'supervisor');
   const turnoRank = groupParadasBy(baseParadas, 'turno');
   const turmaRank = groupParadasBy(baseParadas, 'turma');
   const totalMinutos = baseParadas.reduce((acc, item) => acc + getDurationInMinutes(item), 0);
 
   const wantsPainel = pergunta.includes('painel');
+  const wantsEquipamento = pergunta.includes('tag') || pergunta.includes('equipamento') || pergunta.includes('equip');
   const wantsTurno = pergunta.includes('turno');
   const wantsTurma = pergunta.includes('turma');
   const wantsMost = pergunta.includes('mais') || pergunta.includes('maior');
+  const wantsSupervisao = pergunta.includes('supervisao') || pergunta.includes('supervisor');
   const wantsTotalTime = pergunta.includes('tempo total') || pergunta.includes('horario total') || pergunta.includes('duracao total');
   const wantsCount = pergunta.includes('quantas') || pergunta.includes('quantidade') || pergunta.includes('total de paradas') || pergunta.includes('total de parada');
+
+  if (wantsEquipamento && (wantsMost || wantsSupervisao)) {
+    const paradasComTag = baseParadas.filter((item) => String(item.tagEquipamento || '').trim());
+
+    if (paradasComTag.length === 0) {
+      return {
+        title: 'Nenhuma parada com Tag cadastrada',
+        content: 'Cadastre a Tag do equipamento para identificar as paradas por equipamento.'
+      };
+    }
+
+    const rankingTags = groupParadasBy(paradasComTag, 'tagEquipamento');
+    const equipamentoMaisParadas = rankingTags[0];
+    const paradasDoEquipamento = paradasComTag.filter(
+      (item) => String(item.tagEquipamento || '').trim() === equipamentoMaisParadas.label
+    );
+    const supervisaoMaisParadas = groupParadasBy(paradasDoEquipamento, 'supervisor')[0];
+
+    return {
+      title: 'Equipamento com mais paradas',
+      content: `O equipamento identificado pela Tag ${equipamentoMaisParadas.label} teve mais paradas: ${equipamentoMaisParadas.quantidade} registros, somando ${formatMinutes(equipamentoMaisParadas.minutos)}. A supervisao com mais registros desse equipamento foi ${supervisaoMaisParadas.label}, com ${supervisaoMaisParadas.quantidade} paradas.`
+    };
+  }
+
+  if (wantsSupervisao && wantsMost) {
+    const top = supervisaoRank[0];
+    return {
+      title: 'Supervisao com mais paradas',
+      content: `A supervisao ${top.label} teve mais paradas: ${top.quantidade} registros, somando ${formatMinutes(top.minutos)}.`
+    };
+  }
 
   if (wantsPainel && wantsMost) {
     const top = painelRank[0];
@@ -182,7 +217,7 @@ function buildAgentReply(question, historicoParadas) {
 
   return {
     title: 'Pergunta nao reconhecida',
-    content: 'Tente perguntar sobre painel, turno, turma, quantidade total ou tempo total de parada.'
+    content: 'Tente perguntar sobre painel, equipamento por Tag, supervisao, turno, turma, quantidade total ou tempo total de parada.'
   };
 }
 
@@ -853,6 +888,7 @@ function DashboardPage({ pagePermissions }) {
   const [editandoIndex, setEditandoIndex] = useState(null);
   const [formData, setFormData] = useState({
     nome: '',
+    tagEquipamento: '',
     status: '',
     turno: '',
     turma: '',
@@ -899,6 +935,7 @@ function DashboardPage({ pagePermissions }) {
         idHistorico: Date.now(),
         equipamentoId: equipamento.id,
         nome: equipamento.nome,
+        tagEquipamento: equipamento.tagEquipamento,
         status: equipamento.status,
         turno: equipamento.turno,
         turma: equipamento.turma,
@@ -917,6 +954,7 @@ function DashboardPage({ pagePermissions }) {
   function resetForm() {
     setFormData({
       nome: '',
+      tagEquipamento: '',
       status: '',
       turno: '',
       turma: '',
@@ -942,6 +980,7 @@ function DashboardPage({ pagePermissions }) {
     const equipamentoObj = {
       id: equipamentoAtual?.id ?? nextId,
       nome: formData.nome.trim(),
+      tagEquipamento: formData.tagEquipamento.trim(),
       status: formData.status,
       turno: formData.turno,
       turma: formData.turma,
@@ -978,6 +1017,7 @@ function DashboardPage({ pagePermissions }) {
     setEditandoIndex(index);
     setFormData({
       nome: equip.nome || '',
+      tagEquipamento: equip.tagEquipamento || '',
       status: equip.status || '',
       turno: equip.turno || '',
       turma: equip.turma || '',
@@ -1010,7 +1050,7 @@ function DashboardPage({ pagePermissions }) {
         {pagePermissions.historico && <LinkButton to="/historico">Ver Gestao de Parada da Manutencao</LinkButton>}
         {pagePermissions['relatorio-turnos'] && <LinkButton to="/relatorio-turnos">Relatorio por Turno</LinkButton>}
         {pagePermissions['historico-opcoes'] && <LinkButton to="/historico-opcoes">Historico por Opcao</LinkButton>}
-        {pagePermissions['historico-datas'] && <LinkButton to="/filtro-datas">Filtrar Historico por Data</LinkButton>}
+        {pagePermissions['historico-datas'] && <LinkButton to="/filtro-datas">Paradas por Equipamento</LinkButton>}
         {pagePermissions['dashboard-turnos'] && <LinkButton to="/dashboard-turnos">Dashboard por Turno</LinkButton>}
         {pagePermissions['graficos-supervisao'] && <LinkButton to="/graficos-supervisao">Graficos por Supervisao</LinkButton>}
         {pagePermissions['agente-ia'] && <LinkButton to="/agente-ia">Agente IA</LinkButton>}
@@ -1027,6 +1067,16 @@ function DashboardPage({ pagePermissions }) {
             value={formData.nome}
             onChange={(event) => setFormData({ ...formData, nome: event.target.value })}
             required
+          />
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="tagEquipamento">Tag do Equipamento:</label>
+          <input
+            id="tagEquipamento"
+            value={formData.tagEquipamento}
+            onChange={(event) => setFormData({ ...formData, tagEquipamento: event.target.value })}
+            placeholder="Ex.: 14SC23"
           />
         </div>
 
@@ -1129,6 +1179,7 @@ function DashboardPage({ pagePermissions }) {
         <thead>
           <tr>
             <th>Painel de Lavra</th>
+            <th>Tag do Equipamento</th>
             <th>Status</th>
             <th>Turno</th>
             <th>Turma</th>
@@ -1144,6 +1195,7 @@ function DashboardPage({ pagePermissions }) {
           {equipamentos.map((equip, idx) => (
             <tr key={equip.id ?? idx}>
               <td data-label="Painel de Lavra">{equip.nome}</td>
+              <td data-label="Tag do Equipamento">{equip.tagEquipamento || '-'}</td>
               <td data-label="Status" className={`status-${equip.status}`}>{equip.status}</td>
               <td data-label="Turno">{equip.turno || '-'}</td>
               <td data-label="Turma">{equip.turma || '-'}</td>
@@ -1202,6 +1254,7 @@ function HistoricoPage({ pagePermissions }) {
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({
     nome: '',
+    tagEquipamento: '',
     status: 'parado',
     turno: 'A',
     turma: 'A',
@@ -1257,6 +1310,7 @@ function HistoricoPage({ pagePermissions }) {
     setEditId(null);
     setEditData({
       nome: '',
+      tagEquipamento: '',
       status: 'parado',
       turno: 'A',
       turma: 'A',
@@ -1277,6 +1331,7 @@ function HistoricoPage({ pagePermissions }) {
     setEditId(item.idHistorico);
     setEditData({
       nome: item.nome || '',
+      tagEquipamento: item.tagEquipamento || '',
       status: item.status || 'parado',
       turno: item.turno || 'A',
       turma: item.turma || 'A',
@@ -1369,6 +1424,13 @@ function HistoricoPage({ pagePermissions }) {
               <option value="liberado">Liberado</option>
               <option value="standby">Standby</option>
             </select>
+          </div>
+          <div className="form-field">
+            <label>Tag do Equipamento</label>
+            <input
+              value={editData.tagEquipamento}
+              onChange={(event) => setEditData({ ...editData, tagEquipamento: event.target.value })}
+            />
           </div>
           <div className="form-field">
             <label>Turno</label>
@@ -1486,6 +1548,7 @@ function HistoricoPage({ pagePermissions }) {
         <thead>
           <tr>
             <th>Painel</th>
+            <th>Tag do Equipamento</th>
             <th>Status</th>
             <th>Turno</th>
             <th>Turma</th>
@@ -1502,6 +1565,7 @@ function HistoricoPage({ pagePermissions }) {
           {historicoParadas.map((item) => (
             <tr key={item.idHistorico}>
               <td data-label="Painel">{item.nome || '-'}</td>
+              <td data-label="Tag do Equipamento">{item.tagEquipamento || '-'}</td>
               <td data-label="Status" className={`${item.status ? `status-${item.status}` : ''} ${item.status === 'parado' ? 'status-highlight' : ''}`.trim()}>
                 {item.status || '-'}
               </td>
@@ -1693,6 +1757,7 @@ function HistoricoDatasPage() {
   const [historicoParadas, setHistoricoParadas] = useState([]);
   const [dataInicial, setDataInicial] = useState('');
   const [dataFinal, setDataFinal] = useState('');
+  const [tagFiltro, setTagFiltro] = useState('');
   const [supervisorFiltro, setSupervisorFiltro] = useState('');
 
   useEffect(() => {
@@ -1722,6 +1787,14 @@ function HistoricoDatasPage() {
     )].sort((first, second) => first.localeCompare(second, 'pt-BR'));
   }, [historicoParadas]);
 
+  const tagsEquipamento = useMemo(() => {
+    return [...new Set(
+      historicoParadas
+        .map((item) => String(item.tagEquipamento || '').trim())
+        .filter(Boolean)
+    )].sort((first, second) => first.localeCompare(second, 'pt-BR'));
+  }, [historicoParadas]);
+
   const filtrados = useMemo(() => {
     if (intervaloInvalido) {
       return [];
@@ -1731,10 +1804,11 @@ function HistoricoDatasPage() {
       const dataRegistro = getRecordDateKey(item.dataHoraRegistro);
       const atendeInicio = !dataInicial || (dataRegistro && dataRegistro >= dataInicial);
       const atendeFim = !dataFinal || (dataRegistro && dataRegistro <= dataFinal);
+      const atendeTag = !tagFiltro || item.tagEquipamento === tagFiltro;
       const atendeSupervisor = !supervisorFiltro || item.supervisor === supervisorFiltro;
-      return atendeInicio && atendeFim && atendeSupervisor;
+      return atendeInicio && atendeFim && atendeTag && atendeSupervisor;
     });
-  }, [dataInicial, dataFinal, historicoParadas, intervaloInvalido, supervisorFiltro]);
+  }, [dataInicial, dataFinal, historicoParadas, intervaloInvalido, supervisorFiltro, tagFiltro]);
 
   const tempoTotal = useMemo(() => {
     const total = filtrados.reduce((sum, item) => sum + getDurationInMinutes(item), 0);
@@ -1744,12 +1818,13 @@ function HistoricoDatasPage() {
   function limparFiltros() {
     setDataInicial('');
     setDataFinal('');
+    setTagFiltro('');
     setSupervisorFiltro('');
   }
 
   return (
     <main className="page-shell">
-      <Header title="Filtro de Historico por Data" />
+      <Header title="Paradas por Equipamento e Periodo" />
 
       <div className="page-actions">
         <LinkButton to="/">Voltar ao painel</LinkButton>
@@ -1764,6 +1839,15 @@ function HistoricoDatasPage() {
         <div className="form-field">
           <label htmlFor="data-final">Data final</label>
           <input id="data-final" type="date" value={dataFinal} onChange={(event) => setDataFinal(event.target.value)} />
+        </div>
+        <div className="form-field">
+          <label htmlFor="tag-equipamento-filtro">Tag do Equipamento</label>
+          <select id="tag-equipamento-filtro" value={tagFiltro} onChange={(event) => setTagFiltro(event.target.value)}>
+            <option value="">Todas as tags</option>
+            {tagsEquipamento.map((tag) => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
         </div>
         <div className="form-field">
           <label htmlFor="supervisor-filtro">Supervisao</label>
@@ -1793,6 +1877,7 @@ function HistoricoDatasPage() {
         <thead>
           <tr>
             <th>Painel</th>
+            <th>Tag do Equipamento</th>
             <th>Status</th>
             <th>Turno</th>
             <th>Turma</th>
@@ -1807,6 +1892,7 @@ function HistoricoDatasPage() {
           {filtrados.map((item) => (
             <tr key={item.idHistorico}>
               <td data-label="Painel">{item.nome || '-'}</td>
+              <td data-label="Tag do Equipamento">{item.tagEquipamento || '-'}</td>
               <td data-label="Status">{item.status || '-'}</td>
               <td data-label="Turno">{item.turno || '-'}</td>
               <td data-label="Turma">{item.turma || '-'}</td>
@@ -2282,7 +2368,7 @@ function AgenteIAPage() {
             <textarea
               id="perguntaIa"
               rows="3"
-              placeholder="Ex.: qual painel teve mais parada?"
+              placeholder="Ex.: qual equipamento teve mais paradas e qual supervisao?"
               value={pergunta}
               onChange={(event) => setPergunta(event.target.value)}
             />
@@ -2294,6 +2380,8 @@ function AgenteIAPage() {
 
         <div className="ai-agent-suggestions" aria-label="Sugestoes de perguntas">
           <button type="button" className="btn secundario" onClick={() => usarSugestao('qual painel teve mais parada?')}>Qual painel teve mais parada?</button>
+          <button type="button" className="btn secundario" onClick={() => usarSugestao('qual equipamento teve mais paradas e qual supervisao?')}>Qual equipamento teve mais paradas e qual supervisao?</button>
+          <button type="button" className="btn secundario" onClick={() => usarSugestao('qual supervisao teve mais paradas?')}>Qual supervisao teve mais paradas?</button>
           <button type="button" className="btn secundario" onClick={() => usarSugestao('qual turno teve mais parada?')}>Qual turno teve mais parada?</button>
           <button type="button" className="btn secundario" onClick={() => usarSugestao('qual turma teve mais parada?')}>Qual turma teve mais parada?</button>
           <button type="button" className="btn secundario" onClick={() => usarSugestao('qual o tempo total de parada?')}>Qual o tempo total de parada?</button>
@@ -2385,12 +2473,55 @@ function GraficosSupervisaoPage() {
     return [...agrupado.values()].sort((first, second) => second.minutos - first.minutos);
   }, [paradasFiltradas]);
 
+  const resumoEquipamentos = useMemo(() => {
+    const agrupado = new Map();
+
+    paradasFiltradas.forEach((item) => {
+      const tag = String(item.tagEquipamento || '').trim();
+      const nomeEquipamento = String(item.nome || '').trim();
+      const chave = tag || nomeEquipamento || 'Nao informado';
+      const nome = tag && nomeEquipamento
+        ? `${nomeEquipamento} (${tag})`
+        : tag || nomeEquipamento || 'Nao informado';
+      const atual = agrupado.get(chave) || { nome, quantidade: 0, minutos: 0 };
+      atual.quantidade += 1;
+      atual.minutos += getDurationInMinutes(item);
+      agrupado.set(chave, atual);
+    });
+
+    return [...agrupado.values()].sort((first, second) => second.minutos - first.minutos);
+  }, [paradasFiltradas]);
+
+  const resumoPorData = useMemo(() => {
+    const agrupado = new Map();
+
+    paradasFiltradas.forEach((item) => {
+      const data = getRecordDateKey(item.dataHoraRegistro);
+      if (!data) {
+        return;
+      }
+
+      const atual = agrupado.get(data) || { data, minutos: 0, quantidade: 0, horarios: [] };
+      atual.minutos += getDurationInMinutes(item);
+      atual.quantidade += 1;
+      atual.horarios.push({
+        inicio: item.horaInicio || '--:--',
+        fim: item.horaFim || '--:--',
+        equipamento: String(item.tagEquipamento || item.nome || '').trim()
+      });
+      agrupado.set(data, atual);
+    });
+
+    return [...agrupado.values()].sort((first, second) => first.data.localeCompare(second.data));
+  }, [paradasFiltradas]);
+
   const totalMinutos = resumoSupervisoes.reduce((total, item) => total + item.minutos, 0);
   const maiorDuracao = resumoSupervisoes[0]?.minutos || 0;
+  const maiorDuracaoEquipamento = resumoEquipamentos[0]?.minutos || 0;
 
   return (
     <main className="page-shell">
-      <Header title="Graficos de Horas de Parada por Supervisao" />
+      <Header title="Graficos de Horas de Parada por Supervisao e Equipamento" />
 
       <div className="page-actions">
         <LinkButton to="/">Voltar ao painel</LinkButton>
@@ -2419,9 +2550,30 @@ function GraficosSupervisaoPage() {
           <strong>{resumoSupervisoes.length}</strong>
         </article>
         <article className="card">
+          <span>Equipamentos no periodo</span>
+          <strong>{resumoEquipamentos.length}</strong>
+        </article>
+        <article className="card">
           <span>Registros de parada</span>
           <strong>{paradasFiltradas.length}</strong>
         </article>
+      </section>
+
+      <section className="supervisor-chart" aria-labelledby="downtime-timeline-title">
+        <div className="supervisor-chart-heading">
+          <div>
+            <h2 id="downtime-timeline-title">Linha do tempo das paradas</h2>
+            <p>Duracao acumulada por data de registro</p>
+          </div>
+        </div>
+
+        {resumoPorData.length > 0 ? (
+          <Suspense fallback={<div className="empty-state">Carregando grafico...</div>}>
+            <DowntimeTimelineChart data={resumoPorData} />
+          </Suspense>
+        ) : (
+          <div className="empty-state">Nenhuma parada com data valida para exibir no periodo.</div>
+        )}
       </section>
 
       <section className="supervisor-chart" aria-labelledby="supervisor-chart-title">
@@ -2452,6 +2604,37 @@ function GraficosSupervisaoPage() {
           </div>
         ) : (
           <div className="empty-state">Nenhuma parada encontrada para o periodo informado.</div>
+        )}
+      </section>
+
+      <section className="supervisor-chart" aria-labelledby="equipment-chart-title">
+        <div className="supervisor-chart-heading">
+          <div>
+            <h2 id="equipment-chart-title">Horas acumuladas por equipamento</h2>
+            <p>Duracao total e quantidade de registros em cada equipamento</p>
+          </div>
+          <span className="supervisor-chart-total">Total {formatMinutes(totalMinutos)}</span>
+        </div>
+
+        {resumoEquipamentos.length > 0 ? (
+          <div className="supervisor-chart-list">
+            {resumoEquipamentos.map((item) => (
+              <div className="supervisor-chart-row" key={item.nome}>
+                <span className="supervisor-chart-name">{item.nome}</span>
+                <div
+                  className="supervisor-chart-track"
+                  role="img"
+                  aria-label={`${item.nome}: ${formatMinutes(item.minutos)} em ${item.quantidade} paradas`}
+                >
+                  <div className="supervisor-chart-bar" style={{ width: `${maiorDuracaoEquipamento ? (item.minutos / maiorDuracaoEquipamento) * 100 : 0}%` }} />
+                </div>
+                <strong className="supervisor-chart-value">{formatMinutes(item.minutos)}</strong>
+                <span className="supervisor-chart-count">{item.quantidade} paradas</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">Nenhuma parada encontrada para equipamentos no periodo informado.</div>
         )}
       </section>
 
